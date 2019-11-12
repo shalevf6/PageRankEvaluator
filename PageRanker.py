@@ -2,12 +2,13 @@
 import csv
 import pandas as pd
 
+edge_df = None
 
 def load_graph(path):
+    global edge_df
     with open(path) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
-        dataFrame = pd.DataFrame(csv_reader)
-
+        edge_df = pd.DataFrame(csv_reader)
 
 
 
@@ -23,3 +24,5 @@ def get_top_nodes(n):
 
 def get_all_PageRank():
     pass
+
+load_graph("C:\\Users\\Giz\\Desktop\\Wikipedia_votes.csv")
