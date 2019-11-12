@@ -1,8 +1,10 @@
 
 import csv
 import pandas as pd
+import numpy as np
 
 edge_df = None
+result_df = None
 
 def load_graph(path):
     global edge_df
