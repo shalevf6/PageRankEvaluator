@@ -18,7 +18,6 @@ def load_graph(path):
         csv_reader = csv.reader(csv_file, delimiter=',')
         edge_df = pd.DataFrame(csv_reader,columns=['source','destination'])
 
-        idx = 0
         # go through all the nodes and add them to the dictionary
         for index, record in edge_df.iterrows():
             source_node = record[0]
@@ -33,8 +32,6 @@ def load_graph(path):
                 new_node = Node(destination_node, set(), set())
                 node_dictionary[destination_node] = new_node
             node_dictionary[destination_node].add_incoming_node(source_node)
-            print(idx)
-            idx = idx + 1
 
         number_of_nodes = len(node_dictionary.keys())
 
@@ -49,18 +46,12 @@ def update_pagerank(beta, first_iteration):
     # in the first iteration, the pagerank of all nodes is 1 / N
     if first_iteration is True:
         first_pagerank_value = float(1) / float(number_of_nodes)
-        idx = 0
         for name, node in node_dictionary.items():
-            print(idx)
-            idx = idx + 1
             node.set_pagerank(first_pagerank_value)
     else:
         # from the formula - S
         s = 0
-        idx = 1
         for name, node in node_dictionary.items():
-            print(idx)
-            idx = idx + 1
             # from the formula - r'j(t)
             temporary_pagerank_value = 0
             incoming_nodes = node.get_incoming_nodes()
