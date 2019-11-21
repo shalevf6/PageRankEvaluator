@@ -1,8 +1,10 @@
-
+from __future__ import with_statement
 import csv
 import pandas as pd
 from pip._vendor.distlib.compat import raw_input
 from Node import Node
+from itertools import islice
+
 
 edge_df = None
 result_df = None
@@ -14,26 +16,28 @@ def load_graph(path):
     global edge_df
     global node_dictionary
     global number_of_nodes
-    with open(path) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
-        edge_df = pd.DataFrame(csv_reader,columns=['source','destination'])
+    try:
+        with open(path) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            edge_df = pd.DataFrame(csv_reader,columns=['source','destination'])
+            i = 0
+            # go through all the nodes and add them to the dictionary
+            for index, record in edge_df.iterrows():
+                source_node = record[0]
+                destination_node = record[1]
 
-        # go through all the nodes and add them to the dictionary
-        for index, record in edge_df.iterrows():
-            source_node = record[0]
-            destination_node = record[1]
+                if source_node not in node_dictionary.keys():
+                    new_node = Node(source_node, set(), set())
+                    node_dictionary[source_node] = new_node
+                node_dictionary[source_node].add_outgoing_node(destination_node)
 
-            if source_node not in node_dictionary.keys():
-                new_node = Node(source_node, set(), set())
-                node_dictionary[source_node] = new_node
-            node_dictionary[source_node].add_outgoing_node(destination_node)
-
-            if destination_node not in node_dictionary.keys():
-                new_node = Node(destination_node, set(), set())
-                node_dictionary[destination_node] = new_node
-            node_dictionary[destination_node].add_incoming_node(source_node)
-
-        number_of_nodes = len(node_dictionary.keys())
+                if destination_node not in node_dictionary.keys():
+                    new_node = Node(destination_node, set(), set())
+                    node_dictionary[destination_node] = new_node
+                node_dictionary[destination_node].add_incoming_node(source_node)
+            number_of_nodes = len(node_dictionary.keys())
+    except EnvironmentError:
+        print("directory or file not exists")
 
 
 # updates the PageRank for the current iteration
@@ -156,8 +160,8 @@ def get_top_nodes(n):
     ans = []
     if result_df is None or edge_df is None:
         return ans
-    for index, record in result_df.iterrows():
-        ans.append(int(record[0]))
+    for index, record in islice(result_df.iterrows(),int(n)):
+        ans.append([int(record[0]),float(record[1])])
     return ans
 
 
@@ -191,7 +195,7 @@ def get_path_from_user():
 
 
 def get_params_to_calculating():
-    print("if want to use default values enter 0 in one of the values")
+    print("if want to use default value enter -1 in the right input of the values")
     print("enter number for beta")
     beta = raw_input()
     print("enter number for delta")
@@ -212,31 +216,44 @@ def get_number_of_top_nodoe_to_print():
 
 
 def print_nodes(node_list_to_print):
-    for node in node_list_to_print:
-        print("node name: " + node[0] + " node rank: " + node[1])
+    for name,rank in node_list_to_print:
+        print("node name: {} and node rank: {}".format(name,rank))
 
 
 def switch_case(menu_op):
     if menu_op == '1':
         path = get_path_from_user()
         # path = "C:\\Users\\Shalev\\Desktop\\Wikipedia_votes.csv"
+        #C:\Users\Giz\Desktop\Wikipedia_votes.csv
         load_graph(path)
-        print(edge_df)
         # calculate_page_rank()
     elif menu_op == '2':
         beta,delta,max_iteration = get_params_to_calculating()
-        if beta == '0' or delta == '0' or max_iteration == '0':
-            calculate_page_rank()
+        print(checkIfFloat(beta))
+        print(checkIfFloat(delta))
+        print(checkIfInt(max_iteration))
+        if not (checkIfFloat(beta) and checkIfFloat(delta) and checkIfInt(max_iteration)):
+            print("wrong input, need to enter 3 numbers.")
         else:
+            if beta == '-1':
+                beta = 0.85
+            if delta == '-1':
+                delta = 0.001
+            if max_iteration == '-1':
+                max_iteration = 20
             calculate_page_rank(beta,delta,max_iteration)
+
     elif menu_op == '3':
         name = get_node_name()
         rank = get_PageRank(name)
         print(rank)
     elif menu_op == '4':
         number_of_nodes = get_number_of_top_nodoe_to_print()
-        node_list_to_print = get_top_nodes(number_of_nodes)
-        print_nodes(node_list_to_print)
+        if not number_of_nodes.isdigit():
+            print("wrong input, need to enter a number.")
+        else:
+            node_list_to_print = get_top_nodes(number_of_nodes)
+            print_nodes(node_list_to_print)
     elif menu_op == '5':
         all_nodes_list = get_all_PageRank()
         print_nodes(all_nodes_list)
@@ -249,7 +266,19 @@ def get_new_menu_input():
     print("enter new menu input")
     return raw_input()
 
+def checkIfInt(input):
+    try:
+        int(input)
+        return True
+    except ValueError:
+        return False
 
+def checkIfFloat(input):
+    try:
+        float(input)
+        return True
+    except ValueError:
+        return False
 # Shalev's tests
 # load_graph("C:\\Users\\Shalev\\Desktop\\Wikipedia_votes.csv")
 # print(edge_df)
@@ -301,8 +330,15 @@ def get_new_menu_input():
 #     print (arr)
 #     print()
 
-showMenu()
-input = getInput()
-while (input != '0'):
-    switch_case(input)
-    input = get_new_menu_input()
+
+load_graph("C:\\Users\Giz\Desktop\soc-Epinions1.csv")
+calculate_page_rank()
+toPrint = get_top_nodes(10)
+print_nodes(toPrint)
+
+##showMenu()
+##input = getInput()
+##while (input != '0'):
+##    switch_case(input)
+##    showMenu()
+##    input = get_new_menu_input()
