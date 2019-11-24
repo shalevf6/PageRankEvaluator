@@ -186,8 +186,14 @@ def get_PageRank(node_name):
 # gets a list of n nodes with the highest page rank
 def get_top_nodes(n):
     ans = []
-    if result_df is None or edge_df is None or not n.isdigit():
+
+    if result_df is None or edge_df is None or n <= 0:
         return ans
+
+    # if the given number is bigger than the amount of nodes, than the amount of nodes returned will be all of the nodes
+    if n > len(node_dictionary.items()):
+        n = len(node_dictionary.items())
+
     for index, record in islice(result_df.iterrows(),int(n)):
         ans.append([int(record[0]),float(record[1])])
     return ans
