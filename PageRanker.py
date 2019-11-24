@@ -53,6 +53,10 @@ def update_pagerank(beta, first_iteration):
         for name, node in node_dictionary.items():
             node.set_pagerank(first_pagerank_value)
     else:
+        # transfer all current pagerank values to be previous pagerank values
+        for name, node in node_dictionary.items():
+            node.set_curr_to_prev()
+
         # from the formula - S
         s = 0
         for name, node in node_dictionary.items():
@@ -92,59 +96,83 @@ def check_if_conditions_apply(delta):
         prev_pagerank = node.get_pagerank(True)
         curr_pagerank = node.get_pagerank(False)
         total_score = total_score + abs(prev_pagerank - curr_pagerank)
-    if total_score <= delta:
-        return False
-    else:
+    if total_score > delta:
         return True
+    else:
+        return False
 
 
 # creates the final sorted results dataframe from all the nodes in the dictionary
-# previous - True if the results should be the last iteration's results, else - False
-def get_final_dataframe(previous):
+def get_final_dataframe():
     global node_dictionary
     df = pd.DataFrame(columns=['node_name', 'page_rank_value'])
     for name, node in node_dictionary.items():
-        if previous:
-            node.set_prev_to_cur()
         new_row = [name, node.get_pagerank(False)]
         df.loc[len(df)] = new_row
     df = df.sort_values(by=['page_rank_value'], ascending=False)
     return df
 
 
+# checks if a given number is an integer
+# number - a given number
+def check_if_int(number):
+    try:
+        int(number)
+        return True
+    except ValueError:
+        return False
+
+
+# checks if a given number is an integer
+# number - a given number
+def check_if_float(number):
+    try:
+        float(number)
+        return True
+    except ValueError:
+        return False
+
+
 # calculates the page rank for the loaded graph
 # beta, delta - the beta and delta elements in the PageRank formula
 # max_iterations - the maximum number of iterations for the algorithm
 def calculate_page_rank (beta=0.85, delta=0.001, max_iterations=20):
+
+    # check if all the parameters are ok
+    if check_if_float(beta) is False or check_if_float(delta) is False or check_if_int(max_iterations) is False:
+        print("one or more of the parameters inserted is incorrect")
+        return
+
     global result_df
     global node_dictionary
-    curr_iter = 0
 
-    # updates the PageRank values for the first iteration
+    # updates the initial PageRank values
     update_pagerank(beta, True)
 
     # updates the result to be the first iteration in case the max_iterations parameter is 0
     if max_iterations == 0:
-        result_df = get_final_dataframe(False)
+        result_df = get_final_dataframe()
     else:
+
+        # updates the PageRank values of the first iteration
+        update_pagerank(beta, False)
+        curr_iter = 1
+
+        # checks whether the delta is valid
+        passed = check_if_conditions_apply(delta)
+
         # iterates over the PageRank algorithm
-        delta_was_valid = False
-        while curr_iter <= max_iterations:
+        while curr_iter <= max_iterations and passed:
             curr_iter = curr_iter + 1
 
             # updates the PageRank values for this iteration
             update_pagerank(beta, False)
 
             # checks whether the delta is valid
-            if curr_iter > 1:
-                passed = check_if_conditions_apply(delta)
-                if not passed:
-                    result_df = get_final_dataframe(True)
-                    delta_was_valid = True
-                    break
+            passed = check_if_conditions_apply(delta)
 
-        if not delta_was_valid:
-            result_df = get_final_dataframe(False)
+        result_df = get_final_dataframe()
+
 
 
 # gets the page rank of a specific node
@@ -158,7 +186,7 @@ def get_PageRank(node_name):
 # gets a list of n nodes with the highest page rank
 def get_top_nodes(n):
     ans = []
-    if result_df is None or edge_df is None:
+    if result_df is None or edge_df is None or not n.isdigit():
         return ans
     for index, record in islice(result_df.iterrows(),int(n)):
         ans.append([int(record[0]),float(record[1])])
@@ -173,172 +201,3 @@ def get_all_PageRank():
     for index, record in result_df.iterrows():
         ans.append([int(record[0]),float(record[1])])
     return ans
-
-
-
-def getInput():
-    menu_operator = raw_input()
-    return menu_operator
-
-def showMenu():
-    print("to insert path the the graph file press 1 \n"
-                              "to calculate page rank press 2\n"
-                              "to get page rank of specific node press 3\n"
-                              "to get page ranks of top n nodes press 4\n"
-                              "to get all page ranks press 5\n"
-                              "to exit press 0\n")
-
-
-def get_path_from_user():
-    print("enter a path to the graph file")
-    return raw_input()
-
-
-def get_params_to_calculating():
-    print("if want to use default value enter -1 in the right input of the values")
-    print("enter number for beta")
-    beta = raw_input()
-    print("enter number for delta")
-    delta = raw_input()
-    print("enter number for max iteration")
-    max_iteration = raw_input()
-    return beta,delta,max_iteration
-
-
-def get_node_name():
-    print("enter number name")
-    return raw_input()
-
-
-def get_number_of_top_nodoe_to_print():
-    print("enter number of top nodes to print")
-    return raw_input()
-
-
-def print_nodes(node_list_to_print):
-    for name,rank in node_list_to_print:
-        print("node name: {} and node rank: {}".format(name,rank))
-
-
-def switch_case(menu_op):
-    if menu_op == '1':
-        path = get_path_from_user()
-        # path = "C:\\Users\\Shalev\\Desktop\\Wikipedia_votes.csv"
-        #C:\Users\Giz\Desktop\Wikipedia_votes.csv
-        load_graph(path)
-        # calculate_page_rank()
-    elif menu_op == '2':
-        beta,delta,max_iteration = get_params_to_calculating()
-        print(checkIfFloat(beta))
-        print(checkIfFloat(delta))
-        print(checkIfInt(max_iteration))
-        if not (checkIfFloat(beta) and checkIfFloat(delta) and checkIfInt(max_iteration)):
-            print("wrong input, need to enter 3 numbers.")
-        else:
-            if beta == '-1':
-                beta = 0.85
-            if delta == '-1':
-                delta = 0.001
-            if max_iteration == '-1':
-                max_iteration = 20
-            calculate_page_rank(beta,delta,max_iteration)
-
-    elif menu_op == '3':
-        name = get_node_name()
-        rank = get_PageRank(name)
-        print(rank)
-    elif menu_op == '4':
-        number_of_nodes = get_number_of_top_nodoe_to_print()
-        if not number_of_nodes.isdigit():
-            print("wrong input, need to enter a number.")
-        else:
-            node_list_to_print = get_top_nodes(number_of_nodes)
-            print_nodes(node_list_to_print)
-    elif menu_op == '5':
-        all_nodes_list = get_all_PageRank()
-        print_nodes(all_nodes_list)
-    else:
-        print("wrong input")
-        
-        
-
-def get_new_menu_input():
-    print("enter new menu input")
-    return raw_input()
-
-def checkIfInt(input):
-    try:
-        int(input)
-        return True
-    except ValueError:
-        return False
-
-def checkIfFloat(input):
-    try:
-        float(input)
-        return True
-    except ValueError:
-        return False
-# Shalev's tests
-# load_graph("C:\\Users\\Shalev\\Desktop\\Wikipedia_votes.csv")
-# print(edge_df)
-# edge_df_2 = edge_df
-# for row in edge_df.itertuples():
-#     for row_2 in edge_df_2.itertuples():
-#         print(row)
-#         print(row_2)
-#
-# print(edge_df)
-# incoming_node_list = edge_df.loc[edge_df['source'] == '28']
-# print(incoming_node_list)
-# incoming_node_list.at[edge_df['destination']]
-# edge_df.at[edge_df.source == '28', ['destination']] = 6
-# incoming_node_list = edge_df.loc[edge_df['source'] == '28']
-# print(incoming_node_list)
-# incoming_node_list.loc[incoming_node_list.source == '28', ['destination']] = '6'
-# print(edge_df)
-# print(edge_df.loc[edge_df['source'] == '28']['destination'].values[4])
-# print(edge_df.loc[edge_df['source'] == '28']['destination'].values[2])
-# incoming_node_list = edge_df.loc[edge_df[1] == '28']
-# print(incoming_node_list)
-
-# temp_result_df1 = pd.DataFrame(columns=('node_name', 'pagerank_value'))
-# print(temp_result_df1)
-# row = [30, 20.5]
-# temp_result_df1.loc[len(temp_result_df1)] = row
-# row = [1,0.6663]
-# temp_result_df1.loc[len(temp_result_df1)] = row
-# row = [26, 4]
-# temp_result_df1.loc[len(temp_result_df1)] = row
-# row = [24578, 0.000885]
-# temp_result_df1.loc[len(temp_result_df1)] = row
-# print(temp_result_df1)
-# temp_result_df1 = temp_result_df1.sort_values(by=['pagerank_value'], ascending=True)
-# print(temp_result_df1)
-# print()
-# print()
-# temp_result_df1 = temp_result_df1.head(3)
-# print(temp_result_df1)
-# print()
-# print()
-# print()
-# arr = []
-# for index, record in temp_result_df1.iterrows():
-#     arr.append(int(record[0]))
-#     print (int(record[0]))
-#     print()
-#     print (arr)
-#     print()
-
-
-load_graph("C:\\Users\Giz\Desktop\soc-Epinions1.csv")
-calculate_page_rank()
-toPrint = get_top_nodes(10)
-print_nodes(toPrint)
-
-##showMenu()
-##input = getInput()
-##while (input != '0'):
-##    switch_case(input)
-##    showMenu()
-##    input = get_new_menu_input()

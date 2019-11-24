@@ -13,14 +13,13 @@ class Node:
         self.temp_pagerank = 0
 
     def set_pagerank(self, pagerank):
-        self.prev_pagerank = self.curr_pagerank
         self.curr_pagerank = pagerank
 
     def set_temp_pagerank(self, pagerank):
         self.temp_pagerank = pagerank
 
-    def set_prev_to_cur(self):
-        self.curr_pagerank = self.prev_pagerank
+    def set_curr_to_prev(self):
+        self.prev_pagerank = self.curr_pagerank
 
     def get_pagerank(self, previous):
         if previous:
